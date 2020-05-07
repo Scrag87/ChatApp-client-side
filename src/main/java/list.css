@@ -1,0 +1,12 @@
+
+.list-cell {
+  -fx-alignment: center-left;
+/*  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
+  -fx-background-insets: 0, -0, 0, 0;*/
+}
+
+.list-cell:odd {
+  -fx-alignment: center-right;
+
+}
