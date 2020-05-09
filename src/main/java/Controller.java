@@ -1,11 +1,13 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.net.URL;
-import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.StringTokenizer;
 import java.util.Vector;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
@@ -16,6 +18,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -26,12 +29,15 @@ import javafx.stage.WindowEvent;
 import net.jcip.annotations.GuardedBy;
 
 public class Controller implements Initializable {
-
-
+  private static volatile boolean isReadThreadRunning;
   private static Vector<String> tmpList = new Vector<>();
+  private static Vector<String> messages = new Vector<>();
+  private static Vector<String> clientList = new Vector<>();
+
   private static Connection connection = Connection.getInstance();
-  private static DataInputStream dis;
-  private static DataOutputStream dos;
+  private static DataInputStream inputStream;
+  private static DataOutputStream outputStream;
+
   private String nickname;
   public TextArea textArea;
   public Label labelStatus;
@@ -39,8 +45,14 @@ public class Controller implements Initializable {
   public TextField messageInput;
   public Button sendMessageButton;
 
-  private final Object listViewLock = new Object();
-  @GuardedBy("listViewLock")
+  private final Object listChatViewLock = new Object();
+
+  @GuardedBy("listChatViewLock")
+  public ListView chatMemberListview;
+
+  private final Object listUserViewLock = new Object();
+
+  @GuardedBy("listUserViewLock")
   public ListView listView;
 
   public static EventHandler<WindowEvent> getCloseEventHandler() {
@@ -59,35 +71,34 @@ public class Controller implements Initializable {
   }
 
   private void sendMessage() {
-    if (messageInput.getText().equals("")) {
+    String message = messageInput.getText();
+    if (message.equals("")) {
       return;
     }
-    addToListView(messageInput.getText());
-    sendMessageToServer(messageInput.getText());
+
+    if (message.equals("/end")) {
+      isReadThreadRunning = false;
+      sendMessageToServer(message);
+      return;
+    }
+    addToChatBoxListView(message);
+    sendMessageToServer(message);
     messageInput.clear();
   }
 
-  public static void initialize() {
-    try {
+  public static boolean initialize(String ipAddress, int portNumber) {
+    if (connection.connect(ipAddress, portNumber)) {
+      outputStream = connection.getOutputStream();
+      inputStream = connection.getInputStream();
 
-      //    listView.setBorder(Border.EMPTY);
-      //    sendMessageButton.setBorder(Border.EMPTY);
-      //    messageInput.setBorder(Border.EMPTY);
-
-      Socket s = connection.getSocket();
-      dis = new DataInputStream(s.getInputStream());
-      dos = new DataOutputStream(s.getOutputStream());
-
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
+      return true;
+    } else {
+      return false;
     }
   }
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
-
     sendMessageButton.setStyle(
         "-fx-focus-color: transparent;"
             + " -fx-background-insets: 0, -0, 0, 0;"
@@ -107,46 +118,102 @@ public class Controller implements Initializable {
     }
   }
 
-  public void runReadMsgTread() {
-    // readMessage thread
+  public  synchronized void runReadMsgTread() {
+    isReadThreadRunning = true;
+
     Thread readMessage =
         new Thread(
             () -> {
-              while (true) {
+              while (isReadThreadRunning) {
                 String msg = "";
                 try {
                   // read the message sent to this client
-                  msg = dis.readUTF();
+                  msg = inputStream.readUTF();
 
                 } catch (IOException e) {
                   System.out.println(" Wrong Command");
-                 e.printStackTrace();
+                  isReadThreadRunning = false;
+                  System.out.println(connection);
+                  e.printStackTrace();
                 }
-                addToListView(msg);
+
+                if (msg.equals("/end")) {
+                  continue;
+                }
+                if (msg.equals("<@#> Busy")) {
+                  clearMessages();
+                  msg = "Name is taken. Choose another one";
+                }
+
+                if (msg.equals("<@#> Connection closed")) {
+                  break;
+                }
+
+                if (msg.equals("<@#> Connection closed")) {
+                  break;
+                }
+
+
+                if (msg.startsWith("<@#> ")) {
+                  String clientName = getClientName(msg);
+                  String message = tokenize(msg)[2];
+                  if (msg.startsWith("<@#> ") && msg.contains("join us")) {
+                    chatMemberAddToListView(clientName);
+                    msg = clientName + " join us";
+                  }
+                  if (msg.startsWith("<@#> ") && msg.contains("left us")) {
+                    chatMemberRemoveFromListView(clientName);
+                    msg = clientName + " left us";
+                  }
+                }
+
+                addToMessages(msg);
                 System.out.println(msg);
+                System.out.println(messages);
+
+                // Update the text of label here
+                Platform.runLater(
+                    () -> {
+                      listView.getItems().removeAll();
+                      listView.getItems().addAll(messages);
+                      chatMemberListview.getItems().removeAll();
+                      chatMemberListview.getItems().addAll(clientList);
+                    });
               }
             });
     readMessage.start();
   }
 
-  public synchronized void addToListView(String string) {
+  private synchronized void chatMemberAddToListView(String clientName) {
+    clientList.add(clientName);
+    //    chatMemberListview.getItems().removeAll();
+    //    chatMemberListview.getItems().addAll(clientList);
+  }
+
+  private synchronized void chatMemberRemoveFromListView(String clientName) {
+    clientList.remove(clientName);
+    //    chatMemberListview.getItems().removeAll();
+    //    chatMemberListview.getItems().addAll(clientList);
+  }
+
+  public synchronized void addToChatBoxListView(String string) {
     listView.getItems().addAll(string);
   }
 
-  public void sendMessageToServer(String msg, String to) {
-
-    try {
-      // write on the output stream
-      dos.writeUTF(msg);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  public synchronized void addToMessages(String string) {
+    messages.add(string);
+  }
+  public synchronized void clearMessages() {
+    messages.clear();
+    System.out.println("clearMessages()");
+    listView.getItems().removeAll();
   }
 
   public void sendMessageToServer(String msg) {
     try {
       // write on the output stream
-      dos.writeUTF(msg);
+      outputStream.writeUTF(msg);
+      outputStream.flush();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -159,8 +226,8 @@ public class Controller implements Initializable {
     connectWindow.setScene(new Scene(rootConnect, 400, 300));
     connectWindow.setMinHeight(300);
     connectWindow.setMinWidth(400);
-    // Specifies the modality for new window.
 
+    // Specifies the modality for new window.
     connectWindow.initModality(Modality.APPLICATION_MODAL);
     // Specifies the owner Window (parent) for new window
     // chatWindow.initOwner(primaryStage);
@@ -176,5 +243,49 @@ public class Controller implements Initializable {
   public void menuCloseAction(ActionEvent actionEvent) {
 
     runReadMsgTread();
+  }
+
+  private String getClientName(String input) {
+    return tokenize(input)[1];
+  }
+
+  private String[] tokenize(String received) { // /command recipient message
+    String[] clientMessage = {"", "", ""};
+    String clientName = "";
+    StringTokenizer st = new StringTokenizer(received, " ");
+    String command = st.nextToken();
+    String recipient = st.nextToken();
+    StringBuilder str = new StringBuilder();
+    while (st.hasMoreTokens()) {
+      str.append(st.nextToken()).append(" ");
+    }
+
+    clientMessage[0] = command;
+    clientMessage[1] = recipient;
+    clientMessage[2] = str.toString();
+    System.out.println("tokens " + Arrays.toString(clientMessage));
+    return clientMessage;
+  }
+  //---------------TEST*-----------
+  private void taskThread(){
+    Task task = new Task<String>() {
+      @Override public String call() {
+        String msg = "";
+        try {
+          // read the message sent to this client
+          msg = inputStream.readUTF();
+
+        } catch (IOException e) {
+          System.out.println(" Wrong Command");
+          e.printStackTrace();
+        }
+        return msg;
+      }
+    };
+
+    ProgressBar bar = new ProgressBar();
+    listView.getItems().add(task.getValue());
+    bar.progressProperty().bind(task.progressProperty());
+    new Thread(task).start();
   }
 }

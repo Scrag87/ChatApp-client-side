@@ -1,12 +1,35 @@
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
-public class Connection {  // singleton
-private static Connection INSTANCE;
+public class Connection extends Socket { // singleton
 
-private String ipAddress;
-private int port;
-private Socket socket;
-private boolean isConnected;
+  private static Connection INSTANCE;
+
+  private DataInputStream inputStream;
+  private DataOutputStream outputStream;
+
+  private String ipAddress;
+  private int port;
+  private Socket clientSocket;
+  private boolean isConnected;
+
+  public DataInputStream getInputStream() {
+    return inputStream;
+  }
+
+  public void setInputStream(DataInputStream inputStream) {
+    this.inputStream = inputStream;
+  }
+
+  public DataOutputStream getOutputStream() {
+    return outputStream;
+  }
+
+  public void setOutputStream(DataOutputStream outputStream) {
+    this.outputStream = outputStream;
+  }
 
   public boolean isConnected() {
     return isConnected;
@@ -16,15 +39,32 @@ private boolean isConnected;
     isConnected = connected;
   }
 
-  private Connection() {
-  }
+  private Connection() {}
 
   public static Connection getInstance() {
-    if(INSTANCE == null) {
+    if (INSTANCE == null) {
       INSTANCE = new Connection();
     }
-
     return INSTANCE;
+  }
+
+  public boolean connect(String ipAddress, int portNumber) {
+    try  {
+      Socket clientSocket = new Socket(ipAddress, portNumber);
+
+      INSTANCE.setInputStream(new DataInputStream(clientSocket.getInputStream()));
+      INSTANCE.setOutputStream(new DataOutputStream(clientSocket.getOutputStream()));
+      INSTANCE.setClientSocket(clientSocket);
+      INSTANCE.setIpAddress(ipAddress);
+      INSTANCE.setPort(portNumber);
+      return true;
+    } catch (IOException e) {
+
+      return false;
+    }
+    finally{
+
+    }
   }
 
   public String getIpAddress() {
@@ -43,21 +83,23 @@ private boolean isConnected;
     this.port = port;
   }
 
-  public Socket getSocket() {
-    return socket;
+  public Socket getClientSocket() {
+    return clientSocket;
   }
 
-  public void setSocket(Socket socket) {
-    this.socket = socket;
+  public void setClientSocket(Socket clientSocket) {
+    this.clientSocket = clientSocket;
   }
 
   @Override
-  public String
-  toString() {
+  public String toString() {
     return "Connection{" +
-        "ipAddress='" + ipAddress + '\'' +
+        "inputStream=" + inputStream +
+        ", outputStream=" + outputStream +
+        ", ipAddress='" + ipAddress + '\'' +
         ", port=" + port +
-        ", socket=" + socket +
+        ", clientSocket=" + clientSocket +
+        ", isConnected=" + isConnected +
         '}';
   }
 }

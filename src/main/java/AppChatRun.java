@@ -4,7 +4,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class Main extends Application {
+public class AppChatRun extends Application {
 Scene sceneConnect,sceneChat;
   @Override
   public void start(Stage primaryStage) throws Exception {

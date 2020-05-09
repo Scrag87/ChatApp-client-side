@@ -1,19 +1,13 @@
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class ConnectionController implements Initializable {
@@ -21,10 +15,9 @@ public class ConnectionController implements Initializable {
   public TextField ipAddress;
   public TextField username;
   public TextField port;
-  Connection connection = Connection.getInstance();
+  private Connection connection = Connection.getInstance();
   public Label connectionCheckLabel;
   public Button butConnect;
-
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {}
@@ -32,34 +25,33 @@ public class ConnectionController implements Initializable {
   public void actionConnect(ActionEvent actionEvent) throws IOException {
     System.out.println("Connect");
     checkUsername();
-    connection.setIpAddress(ipAddress.getText());
-    connection.setPort(portNumber);
-    connection.setConnected(true);
-// get a handle to the stage
+
+    // get a handle to the stage
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
     // do what you have to do
     windowConnect.close();
 
-//    Stage chatWindow = new Stage();
-//    chatWindow.setTitle("Connect Stage");
-//    Parent rootChat = FXMLLoader.load(getClass().getResource("chatApp.fxml"));
-//    chatWindow.setScene(new Scene(rootChat, 600, 500));
-//    chatWindow.setMinHeight(400);
-//    chatWindow.setMinWidth(600);
+    //    Stage chatWindow = new Stage();
+    //    chatWindow.setTitle("Connect Stage");
+    //    Parent rootChat = FXMLLoader.load(getClass().getResource("chatApp.fxml"));
+    //    chatWindow.setScene(new Scene(rootChat, 600, 500));
+    //    chatWindow.setMinHeight(400);
+    //    chatWindow.setMinWidth(600);
     // Specifies the modality for new window.
-//    chatWindow.initModality(Modality.NONE);
+    //    chatWindow.initModality(Modality.NONE);
     // Specifies the owner Window (parent) for new window
     // chatWindow.initOwner(primaryStage);
 
     // Set position of second window, related to primary window.
-    // chatWindow.setX(primaryStage.getX() + 200);
-    // chatWindow.setY(primaryStage.getY() + 100);
+    //    Stage windowChat = (Stage) butConnect.getScene().getWindow();
+    //    chatWindow.setX(primaryStage.getX() + 200);
+    //     chatWindow.setY(primaryStage.getY() + 100);
 
-//    Controller controller = new Controller(); // !!!!// FIXME: 5/7/20
-//    controller.runReadMsgTread();
-//
-//    chatWindow.show();
-//    chatWindow.toFront();
+    //    Controller controller = new Controller(); // !!!!// FIXME: 5/7/20
+    //    controller.runReadMsgTread();
+    //
+    //    chatWindow.show();
+    //    chatWindow.toFront();
   }
 
   private boolean checkUsername() {
@@ -93,59 +85,39 @@ public class ConnectionController implements Initializable {
     return IP_PATTERN.matcher(address).matches();
   }
 
-  /*
-  * try (Socket clientSocket = new Socket(ipAddress.getText(), Integer.parseInt(port.getText()));
-          PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-          BufferedReader br =
-              new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-        System.out.println("Connected to server");
-        out.println("#@!" + username.getText());
-        String response = br.readLine();
-        System.out.println("Server response: " + response);
-        if (response.equals("valid")) {
-          // connected=true;
-        }
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-  * */
 
   public void actionClose(ActionEvent actionEvent) {
-    closeConnetion();
+    closeConnection();
     System.exit(1);
   }
 
-  private void closeConnetion() {
+  private void closeConnection() {
     // TODO
   }
 
   public void actionCheckConnection(ActionEvent actionEvent) {
     if (validIp(ipAddress.getText())) {
       if (validPort(port.getText())) {
-        connectionCheckLabel.setText("Wait 10s to check if Host is reachable");
+        connectionCheckLabel.setText("We are checking if Host is reachable ...");
         try {
           if (isReacharble()) {
 
-            try {
+            if( Controller.initialize(ipAddress.getText(), portNumber)){
+              connectionCheckLabel.setText("Able to connect to the server");
+              butConnect.setDisable(false);
 
-              Socket clientSocket = new Socket(ipAddress.getText(), portNumber);
-              connection.setSocket(clientSocket);
-            } catch (ConnectException e) {
+            } else {
               System.out.println("Unable to connect to the server");
               connectionCheckLabel.setText("Unable to connect to the server");
               return;
             }
 
-            connectionCheckLabel.setText("Able to connect to the server");
-            butConnect.setDisable(false);
-            System.out.println(connection);
-            Controller.initialize();
           } else {
-            connectionCheckLabel.setText("Host is NOT reachable ... ");
-            butConnect.setDisable(true);
+            System.out.println("Unable to connect to the server");
+            connectionCheckLabel.setText("Unable to connect to the server");
+            return;
           }
+
         } catch (IOException e) {
           e.printStackTrace();
         }
