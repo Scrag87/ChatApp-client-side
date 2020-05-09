@@ -3,7 +3,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
-public class Connection extends Socket { // singleton
+public class Connection  { // singleton
 
   private static Connection INSTANCE;
 
@@ -49,9 +49,8 @@ public class Connection extends Socket { // singleton
   }
 
   public boolean connect(String ipAddress, int portNumber) {
-    try  {
+    try {
       Socket clientSocket = new Socket(ipAddress, portNumber);
-
       INSTANCE.setInputStream(new DataInputStream(clientSocket.getInputStream()));
       INSTANCE.setOutputStream(new DataOutputStream(clientSocket.getOutputStream()));
       INSTANCE.setClientSocket(clientSocket);
@@ -59,11 +58,8 @@ public class Connection extends Socket { // singleton
       INSTANCE.setPort(portNumber);
       return true;
     } catch (IOException e) {
-
+      e.printStackTrace();
       return false;
-    }
-    finally{
-
     }
   }
 
@@ -93,13 +89,20 @@ public class Connection extends Socket { // singleton
 
   @Override
   public String toString() {
-    return "Connection{" +
-        "inputStream=" + inputStream +
-        ", outputStream=" + outputStream +
-        ", ipAddress='" + ipAddress + '\'' +
-        ", port=" + port +
-        ", clientSocket=" + clientSocket +
-        ", isConnected=" + isConnected +
-        '}';
+    return "Connection{"
+        + "inputStream="
+        + inputStream
+        + ", outputStream="
+        + outputStream
+        + ", ipAddress='"
+        + ipAddress
+        + '\''
+        + ", port="
+        + port
+        + ", clientSocket="
+        + clientSocket
+        + ", isConnected="
+        + isConnected
+        + '}';
   }
 }

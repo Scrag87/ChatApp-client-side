@@ -76,11 +76,11 @@ public class Controller implements Initializable {
       return;
     }
 
-    if (message.equals("/end")) {
-      isReadThreadRunning = false;
-      sendMessageToServer(message);
-      return;
-    }
+//    if (message.equals("/end")) {
+//      isReadThreadRunning = false;
+//      sendMessageToServer(message);
+//      return;
+//    }
     addToChatBoxListView(message);
     sendMessageToServer(message);
     messageInput.clear();
@@ -123,7 +123,9 @@ public class Controller implements Initializable {
 
     Thread readMessage =
         new Thread(
+
             () -> {
+              Connection connection = Connection.getInstance();
               while (isReadThreadRunning) {
                 String msg = "";
                 try {
@@ -168,16 +170,18 @@ public class Controller implements Initializable {
                 }
 
                 addToMessages(msg);
+             //   addToChatBoxListView(msg);
                 System.out.println(msg);
                 System.out.println(messages);
 
                 // Update the text of label here
                 Platform.runLater(
                     () -> {
-                      listView.getItems().removeAll();
+                      listView.getItems().clear();
                       listView.getItems().addAll(messages);
-                      chatMemberListview.getItems().removeAll();
+                      chatMemberListview.getItems().clear();
                       chatMemberListview.getItems().addAll(clientList);
+//
                     });
               }
             });
@@ -186,14 +190,14 @@ public class Controller implements Initializable {
 
   private synchronized void chatMemberAddToListView(String clientName) {
     clientList.add(clientName);
-    //    chatMemberListview.getItems().removeAll();
-    //    chatMemberListview.getItems().addAll(clientList);
+        chatMemberListview.getItems().clear();
+        chatMemberListview.getItems().addAll(clientList);
   }
 
   private synchronized void chatMemberRemoveFromListView(String clientName) {
     clientList.remove(clientName);
-    //    chatMemberListview.getItems().removeAll();
-    //    chatMemberListview.getItems().addAll(clientList);
+        chatMemberListview.getItems().clear();
+        chatMemberListview.getItems().addAll(clientList);
   }
 
   public synchronized void addToChatBoxListView(String string) {
@@ -213,7 +217,7 @@ public class Controller implements Initializable {
     try {
       // write on the output stream
       outputStream.writeUTF(msg);
-      outputStream.flush();
+//      outputStream.flush();
     } catch (IOException e) {
       e.printStackTrace();
     }
