@@ -2,12 +2,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
@@ -18,8 +19,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -30,16 +29,15 @@ import net.jcip.annotations.GuardedBy;
 
 public class Controller implements Initializable {
   private static volatile boolean isReadThreadRunning;
-  private static Vector<String> tmpList = new Vector<>();
+
   private static Vector<String> messages = new Vector<>();
+  private static Vector<String> tmpMessages = new Vector<>();
   private static Vector<String> clientList = new Vector<>();
 
   private static Connection connection = Connection.getInstance();
   private static DataInputStream inputStream;
   private static DataOutputStream outputStream;
 
-  private String nickname;
-  public TextArea textArea;
   public Label labelStatus;
   public MenuItem menuConnect;
   public TextField messageInput;
@@ -76,11 +74,11 @@ public class Controller implements Initializable {
       return;
     }
 
-//    if (message.equals("/end")) {
-//      isReadThreadRunning = false;
-//      sendMessageToServer(message);
-//      return;
-//    }
+    if (message.equals("/end")) {
+      isReadThreadRunning = false;
+      sendMessageToServer(message);
+      return;
+    }
     addToChatBoxListView(message);
     sendMessageToServer(message);
     messageInput.clear();
@@ -91,6 +89,19 @@ public class Controller implements Initializable {
       outputStream = connection.getOutputStream();
       inputStream = connection.getInputStream();
 
+      //      Service<Void> service = new Service<Void>() {
+      //        @Override
+      //        protected Task<Void> createTask() {
+      //          return new Task<Void>() {
+      //            @Override
+      //            protected Void call() throws Exception {
+      //              // Долгий код
+      //              return null;
+      //            }
+      //          };
+      //        }
+      //      };
+      //      service.start();
       return true;
     } else {
       return false;
@@ -118,14 +129,14 @@ public class Controller implements Initializable {
     }
   }
 
-  public  synchronized void runReadMsgTread() {
+  public synchronized void runReadMsgTread() {
+    System.out.println("runReadMsgTread()");
     isReadThreadRunning = true;
 
     Thread readMessage =
         new Thread(
-
             () -> {
-              Connection connection = Connection.getInstance();
+              //  Connection connection = Connection.getInstance();
               while (isReadThreadRunning) {
                 String msg = "";
                 try {
@@ -142,35 +153,56 @@ public class Controller implements Initializable {
                 if (msg.equals("/end")) {
                   continue;
                 }
-                if (msg.equals("<@#> Busy")) {
-                  clearMessages();
-                  msg = "Name is taken. Choose another one";
+                if (msg.startsWith("<@#> ") && msg.contains(" Busy")) {
+                  tmpMessages.add(msg.split(" ")[1]);
+                  Platform.runLater(
+                      () -> {
+                        clearMessages();
+                        messages.add("Name" + tmpMessages + " is taken. Choose another one");
+                        listView
+                            .getItems()
+                            .addAll("Name " + tmpMessages + " is taken. Choose another one");
+                        tmpMessages.clear();
+                        labelStatus.setText("Name is taken.");
+                      });
+                  continue;
                 }
-
                 if (msg.equals("<@#> Connection closed")) {
+                  Platform.runLater(
+                      () -> {
+                        listView.getItems().clear();
+                        listView.getItems().addAll("Connection closed");
+                        labelStatus.setText("Disconnected");
+                      });
                   break;
                 }
-
-                if (msg.equals("<@#> Connection closed")) {
-                  break;
+                if (msg.startsWith("<@#>/u ")) {
+                  ArrayList<String> stringArrayList = new ArrayList<>();
+                  stringArrayList.addAll(Arrays.asList(msg.split(" ")));
+                  stringArrayList.remove(0);
+                  clientList.clear();
+                  Platform.runLater(() -> listOfMemberAddToMemberListView(stringArrayList));
+                  continue;
                 }
-
-
                 if (msg.startsWith("<@#> ")) {
                   String clientName = getClientName(msg);
-                  String message = tokenize(msg)[2];
+                  if (msg.startsWith("<@#> ") && msg.contains("successfully registered!")) {
+                    sendMessageToServer("<@#>/u");
+
+                    Platform.runLater(() -> labelStatus.setText("Connected"));
+                    msg = clientName + " you have been successfully registered!";
+                  }
                   if (msg.startsWith("<@#> ") && msg.contains("join us")) {
-                    chatMemberAddToListView(clientName);
+                    Platform.runLater(() -> chatMemberAddToListView(clientName));
                     msg = clientName + " join us";
                   }
                   if (msg.startsWith("<@#> ") && msg.contains("left us")) {
-                    chatMemberRemoveFromListView(clientName);
+                    Platform.runLater(() -> chatMemberRemoveFromListView(clientName));
                     msg = clientName + " left us";
                   }
                 }
 
                 addToMessages(msg);
-             //   addToChatBoxListView(msg);
                 System.out.println(msg);
                 System.out.println(messages);
 
@@ -181,7 +213,6 @@ public class Controller implements Initializable {
                       listView.getItems().addAll(messages);
                       chatMemberListview.getItems().clear();
                       chatMemberListview.getItems().addAll(clientList);
-//
                     });
               }
             });
@@ -190,34 +221,41 @@ public class Controller implements Initializable {
 
   private synchronized void chatMemberAddToListView(String clientName) {
     clientList.add(clientName);
-        chatMemberListview.getItems().clear();
-        chatMemberListview.getItems().addAll(clientList);
+    chatMemberListview.getItems().clear();
+    chatMemberListview.getItems().addAll(clientList);
+  }
+
+  private synchronized void listOfMemberAddToMemberListView(List<String> clientName) {
+    clientList.clear();
+    clientList.addAll(clientName);
+    chatMemberListview.getItems().clear();
+    chatMemberListview.getItems().addAll(clientList);
   }
 
   private synchronized void chatMemberRemoveFromListView(String clientName) {
     clientList.remove(clientName);
-        chatMemberListview.getItems().clear();
-        chatMemberListview.getItems().addAll(clientList);
+    chatMemberListview.getItems().clear();
+    chatMemberListview.getItems().addAll(clientList);
   }
 
   public synchronized void addToChatBoxListView(String string) {
+    addToMessages(string);
     listView.getItems().addAll(string);
   }
 
   public synchronized void addToMessages(String string) {
     messages.add(string);
   }
+
   public synchronized void clearMessages() {
     messages.clear();
-    System.out.println("clearMessages()");
-    listView.getItems().removeAll();
+    listView.getItems().clear();
   }
 
   public void sendMessageToServer(String msg) {
     try {
       // write on the output stream
       outputStream.writeUTF(msg);
-//      outputStream.flush();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -233,19 +271,11 @@ public class Controller implements Initializable {
 
     // Specifies the modality for new window.
     connectWindow.initModality(Modality.APPLICATION_MODAL);
-    // Specifies the owner Window (parent) for new window
-    // chatWindow.initOwner(primaryStage);
-
-    //     Set position of second window, related to primary window.
-    //    connectWindow.setX(primaryStage.getX() + 200);
-    //    connectWindow.setY(primaryStage.getY() + 100);
-
     connectWindow.show();
     connectWindow.toFront();
   }
 
   public void menuCloseAction(ActionEvent actionEvent) {
-
     runReadMsgTread();
   }
 
@@ -269,27 +299,5 @@ public class Controller implements Initializable {
     clientMessage[2] = str.toString();
     System.out.println("tokens " + Arrays.toString(clientMessage));
     return clientMessage;
-  }
-  //---------------TEST*-----------
-  private void taskThread(){
-    Task task = new Task<String>() {
-      @Override public String call() {
-        String msg = "";
-        try {
-          // read the message sent to this client
-          msg = inputStream.readUTF();
-
-        } catch (IOException e) {
-          System.out.println(" Wrong Command");
-          e.printStackTrace();
-        }
-        return msg;
-      }
-    };
-
-    ProgressBar bar = new ProgressBar();
-    listView.getItems().add(task.getValue());
-    bar.progressProperty().bind(task.progressProperty());
-    new Thread(task).start();
   }
 }

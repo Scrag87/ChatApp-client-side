@@ -1,5 +1,6 @@
 
 .list-cell {
+  -fx-background-color: #a7a7a7;
   -fx-alignment: center-left;
 /*  -fx-focus-color: transparent;
   -fx-faint-focus-color: transparent;
