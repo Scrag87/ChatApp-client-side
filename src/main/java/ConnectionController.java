@@ -11,6 +11,9 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 public class ConnectionController implements Initializable {
+
+  public Button butCheckConnection;
+  //  private Controller controller;
   private int portNumber;
   public TextField ipAddress;
   public TextField port;
@@ -22,8 +25,9 @@ public class ConnectionController implements Initializable {
 
   public void actionConnect(ActionEvent actionEvent) throws IOException {
     System.out.println("Connect");
-
+    Global.getParentController().runReadMsgTread();
     Connection.getInstance().setConnected(true);
+    Global.getParentController().setLabelStatusText("Connected");
     // get a handle to the stage
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
     // do what you have to do
@@ -53,7 +57,6 @@ public class ConnectionController implements Initializable {
     return IP_PATTERN.matcher(address).matches();
   }
 
-
   public void actionClose(ActionEvent actionEvent) {
     closeConnection();
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
@@ -61,7 +64,7 @@ public class ConnectionController implements Initializable {
   }
 
   private void closeConnection() {
-    //System.exit(1);
+    // System.exit(1);
     // TODO
   }
 
@@ -71,9 +74,10 @@ public class ConnectionController implements Initializable {
         connectionCheckLabel.setText("We are checking if Host is reachable ...");
         try {
           if (isReacharble()) {
-            if( Controller.initialize(ipAddress.getText(), portNumber)){
+            if (Controller.initialize(ipAddress.getText(), portNumber)) {
               connectionCheckLabel.setText("Able to connect to the server");
               butConnect.setDisable(false);
+
             } else {
               System.out.println("Unable to connect to the server");
               connectionCheckLabel.setText("Unable to connect to the server");

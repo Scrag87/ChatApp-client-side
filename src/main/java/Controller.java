@@ -11,6 +11,7 @@ import java.util.Vector;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
@@ -30,18 +31,25 @@ import net.jcip.annotations.GuardedBy;
 public class Controller implements Initializable {
   private static volatile boolean isReadThreadRunning;
 
+  @GuardedBy("this")
   private static Vector<String> messages = new Vector<>();
+
+  @GuardedBy("this")
   private static Vector<String> tmpMessages = new Vector<>();
+
+  @GuardedBy("this")
   private static Vector<String> clientList = new Vector<>();
 
   private static Connection connection = Connection.getInstance();
   private static DataInputStream inputStream;
   private static DataOutputStream outputStream;
 
-  public Label labelStatus;
-  public MenuItem menuConnect;
-  public TextField messageInput;
-  public Button sendMessageButton;
+  @FXML private MenuItem menuConnect;
+  @FXML private TextField messageInput;
+  @FXML private Button sendMessageButton;
+
+
+  @FXML private Label labelStatus;
 
   private final Object listChatViewLock = new Object();
 
@@ -110,6 +118,8 @@ public class Controller implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
+    Global.setParentController(this);
+    labelStatus.setText("Disconnected");
     sendMessageButton.setStyle(
         "-fx-focus-color: transparent;"
             + " -fx-background-insets: 0, -0, 0, 0;"
@@ -127,6 +137,10 @@ public class Controller implements Initializable {
     if (keyEvent.getCode() == KeyCode.ENTER) {
       sendMessage();
     }
+  }
+
+  public Controller getController() {
+    return this;
   }
 
   public synchronized void runReadMsgTread() {
@@ -163,7 +177,6 @@ public class Controller implements Initializable {
                             .getItems()
                             .addAll("Name " + tmpMessages + " is taken. Choose another one");
                         tmpMessages.clear();
-                        labelStatus.setText("Name is taken.");
                       });
                   continue;
                 }
@@ -276,6 +289,7 @@ public class Controller implements Initializable {
   }
 
   public void menuCloseAction(ActionEvent actionEvent) {
+    System.out.println(this.getClass().getSimpleName());
     runReadMsgTread();
   }
 
@@ -300,4 +314,11 @@ public class Controller implements Initializable {
     System.out.println("tokens " + Arrays.toString(clientMessage));
     return clientMessage;
   }
+
+
+
+  public void setLabelStatusText(String text) {
+    labelStatus.setText(text);
+  }
+
 }
