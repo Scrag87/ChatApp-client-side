@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
-import java.util.Vector;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -31,14 +30,24 @@ import net.jcip.annotations.GuardedBy;
 public class Controller implements Initializable {
   private static volatile boolean isReadThreadRunning;
 
-  @GuardedBy("this")
-  private static Vector<String> messages = new Vector<>();
+  //  @GuardedBy("this")
+  //  private static Vector<String> messages = new Vector<>();
+  //
+  //  @GuardedBy("this")
+  //  private static Vector<String> tmpMessages = new Vector<>();
+  //
+  //  @GuardedBy("this")
+  //  private static Vector<String> clientList = new Vector<>();
+  //
 
   @GuardedBy("this")
-  private static Vector<String> tmpMessages = new Vector<>();
+  private static ArrayList<String> messages = new ArrayList<>();
 
   @GuardedBy("this")
-  private static Vector<String> clientList = new Vector<>();
+  private static ArrayList<String> tmpMessages = new ArrayList<>();
+
+  @GuardedBy("this")
+  private static ArrayList<String> clientList = new ArrayList<>();
 
   private static Connection connection = Connection.getInstance();
   private static DataInputStream inputStream;
@@ -47,7 +56,6 @@ public class Controller implements Initializable {
   @FXML private MenuItem menuConnect;
   @FXML private TextField messageInput;
   @FXML private Button sendMessageButton;
-
 
   @FXML private Label labelStatus;
 
@@ -78,17 +86,22 @@ public class Controller implements Initializable {
 
   private void sendMessage() {
     String message = messageInput.getText();
-    if (message.equals("")) {
-      return;
+    if (Connection.getInstance().isConnected()) {
+      if (message.equals("")) {
+        return;
+      }
+
+      if (message.equals("/end")) {
+        isReadThreadRunning = false;
+        sendMessageToServer(message);
+        return;
+      }
+      addToChatBoxListView(message);
+      sendMessageToServer(message);
+    } else {
+      System.out.println("Connection Close");
     }
 
-    if (message.equals("/end")) {
-      isReadThreadRunning = false;
-      sendMessageToServer(message);
-      return;
-    }
-    addToChatBoxListView(message);
-    sendMessageToServer(message);
     messageInput.clear();
   }
 
@@ -186,6 +199,8 @@ public class Controller implements Initializable {
                         listView.getItems().clear();
                         listView.getItems().addAll("Connection closed");
                         labelStatus.setText("Disconnected");
+                        chatMemberListview.getItems().clear();
+                        Connection.getInstance().setConnected(false);
                       });
                   break;
                 }
@@ -200,7 +215,7 @@ public class Controller implements Initializable {
                 if (msg.startsWith("<@#> ")) {
                   String clientName = getClientName(msg);
                   if (msg.startsWith("<@#> ") && msg.contains("successfully registered!")) {
-                    sendMessageToServer("<@#>/u");
+                    // sendMessageToServer("<@#>/u");
 
                     Platform.runLater(() -> labelStatus.setText("Connected"));
                     msg = clientName + " you have been successfully registered!";
@@ -263,6 +278,7 @@ public class Controller implements Initializable {
   public synchronized void clearMessages() {
     messages.clear();
     listView.getItems().clear();
+    messageInput.clear();
   }
 
   public void sendMessageToServer(String msg) {
@@ -315,10 +331,7 @@ public class Controller implements Initializable {
     return clientMessage;
   }
 
-
-
   public void setLabelStatusText(String text) {
     labelStatus.setText(text);
   }
-
 }

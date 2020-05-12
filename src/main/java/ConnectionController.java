@@ -28,6 +28,8 @@ public class ConnectionController implements Initializable {
     Global.getParentController().runReadMsgTread();
     Connection.getInstance().setConnected(true);
     Global.getParentController().setLabelStatusText("Connected");
+    Global.getParentController().clearMessages();
+
     // get a handle to the stage
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
     // do what you have to do
