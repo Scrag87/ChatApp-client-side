@@ -99,7 +99,7 @@ public class Controller implements Initializable {
       addToChatBoxListView(message);
       sendMessageToServer(message);
     } else {
-      System.out.println("Connection Close");
+      System.out.println("Connection CloseD");
     }
 
     messageInput.clear();
@@ -157,7 +157,7 @@ public class Controller implements Initializable {
   }
 
   public synchronized void runReadMsgTread() {
-    System.out.println("runReadMsgTread()");
+    System.out.println("runReadMsgTread()-Controller");
     isReadThreadRunning = true;
 
     Thread readMessage =
@@ -305,8 +305,7 @@ public class Controller implements Initializable {
   }
 
   public void menuCloseAction(ActionEvent actionEvent) {
-    System.out.println(this.getClass().getSimpleName());
-    runReadMsgTread();
+    System.exit(1);
   }
 
   private String getClientName(String input) {

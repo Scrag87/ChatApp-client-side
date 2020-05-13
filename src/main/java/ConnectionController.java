@@ -1,9 +1,13 @@
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -12,28 +16,45 @@ import javafx.stage.Stage;
 
 public class ConnectionController implements Initializable {
 
-  public Button butCheckConnection;
-  //  private Controller controller;
   private int portNumber;
-  public TextField ipAddress;
-  public TextField port;
-  public Label connectionCheckLabel;
-  public Button butConnect;
+
+  private volatile boolean isReadThreadConnectionRun;
+  private static Connection connection = Connection.getInstance();
+  private static DataInputStream inputStream;
+  private static DataOutputStream outputStream;
+
+  @FXML private Button butLogin;
+  @FXML private Button butRegisration;
+  @FXML private Button butCheckConnection;
+  @FXML private TextField passwordTextField;
+  @FXML private TextField loginTextField;
+  @FXML private TextField ipAddress;
+  @FXML private TextField port;
+  @FXML private Label connectionCheckLabel;
+  @FXML private Button butConnect;
+  private volatile boolean isLoggedIn = false;
 
   @Override
-  public void initialize(URL url, ResourceBundle resourceBundle) {}
+  public void initialize(URL url, ResourceBundle resourceBundle) {
+
+    // TODO: 5/13/20  passwordTextField show *** instead of letters
+  }
 
   public void actionConnect(ActionEvent actionEvent) throws IOException {
     System.out.println("Connect");
-    Global.getParentController().runReadMsgTread();
-    Connection.getInstance().setConnected(true);
-    Global.getParentController().setLabelStatusText("Connected");
-    Global.getParentController().clearMessages();
+    System.out.println("isLoggedIn "+ isLoggedIn);
 
-    // get a handle to the stage
-    Stage windowConnect = (Stage) butConnect.getScene().getWindow();
-    // do what you have to do
-    windowConnect.close();
+      isReadThreadConnectionRun = false;
+      Global.getParentController().runReadMsgTread();
+      Connection.getInstance().setConnected(true);
+      Global.getParentController().setLabelStatusText("Connected");
+      Global.getParentController().clearMessages();
+
+      // get a handle to the stage
+      Stage windowConnect = (Stage) butConnect.getScene().getWindow();
+      // do what you have to do
+      windowConnect.close();
+
   }
 
   private boolean validPort(String text) {
@@ -60,14 +81,8 @@ public class ConnectionController implements Initializable {
   }
 
   public void actionClose(ActionEvent actionEvent) {
-    closeConnection();
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
     windowConnect.close();
-  }
-
-  private void closeConnection() {
-    // System.exit(1);
-    // TODO
   }
 
   public void actionCheckConnection(ActionEvent actionEvent) {
@@ -78,7 +93,9 @@ public class ConnectionController implements Initializable {
           if (isReacharble()) {
             if (Controller.initialize(ipAddress.getText(), portNumber)) {
               connectionCheckLabel.setText("Able to connect to the server");
-              butConnect.setDisable(false);
+              butLogin.setDisable(false);
+              butRegisration.setDisable(false);
+              runReadMsgTread();
 
             } else {
               System.out.println("Unable to connect to the server");
@@ -107,5 +124,98 @@ public class ConnectionController implements Initializable {
     boolean reachable = address.isReachable(10000);
     System.out.println("Is host reachable? " + reachable);
     return reachable;
+  }
+
+  public void actionLogin(ActionEvent actionEvent) {
+    Global.getParentController()
+        .sendMessageToServer(
+            "<@#>/uc " + loginTextField.getText() + " " + passwordTextField.getText());
+  }
+
+  public synchronized void runReadMsgTread() {
+    outputStream = connection.getOutputStream();
+    inputStream = connection.getInputStream();
+    isReadThreadConnectionRun = true;
+    Thread readMessage =
+        new Thread(
+            () -> {
+              while (isReadThreadConnectionRun) {
+                System.out.println("runReadMsgTread()-Connection " + isReadThreadConnectionRun);
+                String msg = "";
+                try {
+                  // read the message sent to this client
+                  msg = connection.getInputStream().readUTF();
+                  System.out.println(msg);
+
+                } catch (IOException e) {
+                  // TODO: 5/13/20
+                  System.out.println(" Wrong Command");
+                  isReadThreadConnectionRun = false;
+                  e.printStackTrace();
+                }
+
+                if (msg.equals("/end")) {
+                  continue;
+                }
+
+                if (!msg.startsWith("<@#>")) {
+                  continue;
+                }
+
+                if (msg.startsWith("<@#> ") && msg.contains(" Busy")) {
+                  System.out.println(" Busy");
+                  Platform.runLater(
+                      () -> {
+                        connectionCheckLabel.setText(
+                            "Name"
+                                + loginTextField.getText()
+                                + " is taken. Choose"
+                                + " another one");
+                        loginTextField.clear();
+                      });
+                  continue;
+                }
+
+                if (msg.startsWith("<@#> ") && msg.contains("successfully registered!")) {
+                  System.out.println("successfully registered!");
+                  isReadThreadConnectionRun = false;
+                  isLoggedIn = true;
+                  Platform.runLater(
+                      () -> {
+                        butConnect.setDisable(false);
+                      });
+
+                  Platform.runLater(() -> System.out.println("successfully registered!"));
+                }
+                if (msg.startsWith("<@#> ") && msg.contains("successfully auth!")) {
+                  System.out.println("successfully auth!");
+                  isReadThreadConnectionRun = false;
+                  isLoggedIn = true;
+                  Platform.runLater(
+                      () -> {
+                        butConnect.setDisable(false);
+                      });
+
+                  Platform.runLater(() -> System.out.println("successfully registered!"));
+                }
+
+                if (msg.equals("<@#> Connection closed")) {
+                  Platform.runLater(
+                      () -> {
+                        Connection.getInstance().setConnected(false);
+                      });
+                  break;
+                }
+                // Update the text of label here
+                //  Platform.runLater(() -> {});
+              }
+            });
+    readMessage.start();
+  }
+
+  public void actionRegistration(ActionEvent actionEvent) {
+    Global.getParentController()
+        .sendMessageToServer(
+            "<@#>/reg " + loginTextField.getText() + " " + passwordTextField.getText());
   }
 }

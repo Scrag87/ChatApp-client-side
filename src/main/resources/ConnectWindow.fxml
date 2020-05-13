@@ -4,27 +4,19 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-  prefHeight="299.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/11.0.1"
-  xmlns:fx="http://javafx.com/fxml/1" fx:controller="ConnectionController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="299.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ConnectionController">
   <children>
-    <Button fx:id="butCloseApp" layoutX="29.0" layoutY="243.0" mnemonicParsing="false"
-      onAction="#actionClose" prefHeight="44.0" prefWidth="61.0" text="&lt;Back"/>
-    <Button fx:id="butConnect" disable="true" layoutX="228.0" layoutY="245.0"
-      mnemonicParsing="false" onAction="#actionConnect" prefHeight="44.0" prefWidth="136.0"
-      text="Connect"/>
-    <Label layoutX="25.0" layoutY="55.0" text="Server IP " AnchorPane.leftAnchor="25.0"
-      AnchorPane.topAnchor="55.0"/>
-    <TextField fx:id="ipAddress" layoutX="25.0" layoutY="75.0" text="127.0.0.1"
-      AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="75.0"/>
-    <TextField fx:id="port" layoutX="25.0" layoutY="150.0" prefHeight="26.0" prefWidth="64.0"
-      text="8087" AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="150.0"/>
-    <Label layoutX="25.0" layoutY="130.0" text="Port" AnchorPane.leftAnchor="25.0"
-      AnchorPane.topAnchor="130.0"/>
-    <Label fx:id="connectionCheckLabel" layoutX="25.0" layoutY="210.0" prefHeight="25.0"
-      prefWidth="268.0" AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="210.0"/>
-    <Button fx:id="butCheckConnection" layoutX="232.0" layoutY="75.0" mnemonicParsing="false"
-      onAction="#actionCheckConnection" prefHeight="44.0" prefWidth="136.0"
-      text="Check Connection"/>
+    <Button fx:id="butCloseApp" layoutX="29.0" layoutY="243.0" mnemonicParsing="false" onAction="#actionClose" prefHeight="44.0" prefWidth="61.0" text="&lt;Back" />
+    <Button fx:id="butConnect" disable="true" layoutX="228.0" layoutY="245.0" mnemonicParsing="false" onAction="#actionConnect" prefHeight="44.0" prefWidth="136.0" text="Connect" />
+    <Label layoutX="25.0" layoutY="19.0" text="Server IP " AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="19.0" />
+    <TextField fx:id="ipAddress" layoutX="25.0" layoutY="40.0" text="127.0.0.1" AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="40.0" />
+    <TextField fx:id="port" layoutX="66.0" layoutY="75.0" prefHeight="26.0" prefWidth="64.0" text="8087" AnchorPane.leftAnchor="66.0" AnchorPane.topAnchor="75.0" />
+    <Label layoutX="25.0" layoutY="80.0" text="Port" AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="80.0" />
+    <Label fx:id="connectionCheckLabel" layoutX="25.0" layoutY="210.0" prefHeight="25.0" prefWidth="268.0" AnchorPane.leftAnchor="25.0" AnchorPane.topAnchor="210.0" />
+    <Button fx:id="butCheckConnection" layoutX="228.0" layoutY="35.0" mnemonicParsing="false" onAction="#actionCheckConnection" prefHeight="44.0" prefWidth="136.0" text="Check Connection" />
+      <TextField fx:id="loginTextField" layoutX="25.0" layoutY="112.0" promptText="Login" text="c1" />
+      <TextField fx:id="passwordTextField" layoutX="25.0" layoutY="146.0" promptText="password" />
+      <Button fx:id="butLogin" disable="true" layoutX="228.0" layoutY="113.0" mnemonicParsing="false" onAction="#actionLogin" prefHeight="56.0" prefWidth="136.0" text="Login" />
+      <Button fx:id="butRegisration" disable="true" layoutX="26.0" layoutY="178.0" mnemonicParsing="false" onAction="#actionRegistration" prefHeight="26.0" prefWidth="171.0" text="Registration" />
   </children>
 </AnchorPane>

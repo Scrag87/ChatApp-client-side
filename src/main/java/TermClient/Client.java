@@ -64,6 +64,7 @@ public class Client
                   System.out.println(msg);
                 } catch (IOException e) {
                   System.out.println(" Wrong Command");
+                  isRunning=false;
                   //e.printStackTrace();
                 }
               }
