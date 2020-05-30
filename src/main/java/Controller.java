@@ -109,20 +109,6 @@ public class Controller implements Initializable {
     if (connection.connect(ipAddress, portNumber)) {
       outputStream = connection.getOutputStream();
       inputStream = connection.getInputStream();
-
-      //      Service<Void> service = new Service<Void>() {
-      //        @Override
-      //        protected Task<Void> createTask() {
-      //          return new Task<Void>() {
-      //            @Override
-      //            protected Void call() throws Exception {
-      //              // Долгий код
-      //              return null;
-      //            }
-      //          };
-      //        }
-      //      };
-      //      service.start();
       return true;
     } else {
       return false;
@@ -152,10 +138,6 @@ public class Controller implements Initializable {
     }
   }
 
-  public Controller getController() {
-    return this;
-  }
-
   public synchronized void runReadMsgTread() {
     System.out.println("runReadMsgTread()-Controller");
     isReadThreadRunning = true;
@@ -163,7 +145,6 @@ public class Controller implements Initializable {
     Thread readMessage =
         new Thread(
             () -> {
-              //  Connection connection = Connection.getInstance();
               while (isReadThreadRunning) {
                 String msg = "";
                 try {
@@ -215,8 +196,6 @@ public class Controller implements Initializable {
                 if (msg.startsWith("<@#> ")) {
                   String clientName = getClientName(msg);
                   if (msg.startsWith("<@#> ") && msg.contains("successfully registered!")) {
-                    // sendMessageToServer("<@#>/u");
-
                     Platform.runLater(() -> labelStatus.setText("Connected"));
                     msg = clientName + " you have been successfully registered!";
                   }
@@ -229,12 +208,10 @@ public class Controller implements Initializable {
                     msg = clientName + " left us";
                   }
                 }
-
                 addToMessages(msg);
                 System.out.println(msg);
                 System.out.println(messages);
 
-                // Update the text of label here
                 Platform.runLater(
                     () -> {
                       listView.getItems().clear();
@@ -283,7 +260,6 @@ public class Controller implements Initializable {
 
   public void sendMessageToServer(String msg) {
     try {
-      // write on the output stream
       outputStream.writeUTF(msg);
     } catch (IOException e) {
       e.printStackTrace();
@@ -314,7 +290,6 @@ public class Controller implements Initializable {
 
   private String[] tokenize(String received) { // /command recipient message
     String[] clientMessage = {"", "", ""};
-    String clientName = "";
     StringTokenizer st = new StringTokenizer(received, " ");
     String command = st.nextToken();
     String recipient = st.nextToken();
@@ -322,7 +297,6 @@ public class Controller implements Initializable {
     while (st.hasMoreTokens()) {
       str.append(st.nextToken()).append(" ");
     }
-
     clientMessage[0] = command;
     clientMessage[1] = recipient;
     clientMessage[2] = str.toString();
@@ -332,5 +306,11 @@ public class Controller implements Initializable {
 
   public void setLabelStatusText(String text) {
     labelStatus.setText(text);
+  }
+
+  public void menuDisconnectAction(ActionEvent actionEvent) {
+    if (labelStatus.getText().equals("Connected")){
+      sendMessageToServer("/end");
+    }
   }
 }

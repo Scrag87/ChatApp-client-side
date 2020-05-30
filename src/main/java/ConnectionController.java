@@ -23,15 +23,24 @@ public class ConnectionController implements Initializable {
   private static DataInputStream inputStream;
   private static DataOutputStream outputStream;
 
-  @FXML private Button butLogin;
-  @FXML private Button butRegisration;
-  @FXML private Button butCheckConnection;
-  @FXML private TextField passwordTextField;
-  @FXML private TextField loginTextField;
-  @FXML private TextField ipAddress;
-  @FXML private TextField port;
-  @FXML private Label connectionCheckLabel;
-  @FXML private Button butConnect;
+  @FXML
+  private Button butLogin;
+  @FXML
+  private Button butRegisration;
+  @FXML
+  private Button butCheckConnection;
+  @FXML
+  private TextField passwordTextField;
+  @FXML
+  private TextField loginTextField;
+  @FXML
+  private TextField ipAddress;
+  @FXML
+  private TextField port;
+  @FXML
+  private Label connectionCheckLabel;
+  @FXML
+  private Button butConnect;
   private volatile boolean isLoggedIn = false;
 
   @Override
@@ -42,18 +51,18 @@ public class ConnectionController implements Initializable {
 
   public void actionConnect(ActionEvent actionEvent) throws IOException {
     System.out.println("Connect");
-    System.out.println("isLoggedIn "+ isLoggedIn);
+    System.out.println("isLoggedIn " + isLoggedIn);
 
-      isReadThreadConnectionRun = false;
-      Global.getParentController().runReadMsgTread();
-      Connection.getInstance().setConnected(true);
-      Global.getParentController().setLabelStatusText("Connected");
-      Global.getParentController().clearMessages();
+    isReadThreadConnectionRun = false;
+    Global.getParentController().runReadMsgTread();
+    Connection.getInstance().setConnected(true);
+    Global.getParentController().setLabelStatusText("Connected");
+    Global.getParentController().clearMessages();
 
-      // get a handle to the stage
-      Stage windowConnect = (Stage) butConnect.getScene().getWindow();
-      // do what you have to do
-      windowConnect.close();
+    // get a handle to the stage
+    Stage windowConnect = (Stage) butConnect.getScene().getWindow();
+    // do what you have to do
+    windowConnect.close();
 
   }
 
@@ -148,7 +157,6 @@ public class ConnectionController implements Initializable {
                   System.out.println(msg);
 
                 } catch (IOException e) {
-                  // TODO: 5/13/20
                   System.out.println(" Wrong Command");
                   isReadThreadConnectionRun = false;
                   e.printStackTrace();
@@ -167,18 +175,48 @@ public class ConnectionController implements Initializable {
                   Platform.runLater(
                       () -> {
                         connectionCheckLabel.setText(
-                            "Name"
+                            "Name "
                                 + loginTextField.getText()
                                 + " is taken. Choose"
                                 + " another one");
                         loginTextField.clear();
+                        butConnect.setDisable(true);
                       });
                   continue;
+                }
+                if (msg.startsWith("<@#> ") && msg.contains("not registered")) {
+                  System.out.println("User does not exist.");
+                  isLoggedIn = true;
+                  Platform.runLater(
+                      () -> {
+                        connectionCheckLabel.setText(
+                            "Name"
+                                + loginTextField.getText()
+                                + " not registered"
+                                + " .Fire up Reg button!");
+                        loginTextField.clear();
+                        butConnect.setDisable(true);
+                      });
+                  Platform.runLater(() -> System.out.println("not registered!"));
+                }
+
+                if (msg.startsWith("<@#> ") && msg.contains("password wrong!")) {
+                  System.out.println("User password wrong!");
+                  isLoggedIn = true;
+                  Platform.runLater(
+                      () -> {
+                        connectionCheckLabel.setText(
+                            "Name "
+                                + loginTextField.getText()
+                                + " password is wrong!");
+                        passwordTextField.clear();
+                        butConnect.setDisable(true);
+                      });
+                  Platform.runLater(() -> System.out.println("password wrong!"));
                 }
 
                 if (msg.startsWith("<@#> ") && msg.contains("successfully registered!")) {
                   System.out.println("successfully registered!");
-                  isReadThreadConnectionRun = false;
                   isLoggedIn = true;
                   Platform.runLater(
                       () -> {
@@ -206,8 +244,6 @@ public class ConnectionController implements Initializable {
                       });
                   break;
                 }
-                // Update the text of label here
-                //  Platform.runLater(() -> {});
               }
             });
     readMessage.start();
