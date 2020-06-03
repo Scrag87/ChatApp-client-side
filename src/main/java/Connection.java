@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class Connection  { // singleton
-
-  private static Connection INSTANCE;
+  private static Connection INSTANCE = new Connection();
 
   private DataInputStream inputStream;
   private DataOutputStream outputStream;
@@ -42,11 +41,9 @@ public class Connection  { // singleton
   private Connection() {}
 
   public static Connection getInstance() {
-    if (INSTANCE == null) {
-      INSTANCE = new Connection();
-    }
     return INSTANCE;
   }
+
 
   public boolean connect(String ipAddress, int portNumber) {
     try {

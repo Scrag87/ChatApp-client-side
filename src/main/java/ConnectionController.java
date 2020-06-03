@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
@@ -17,7 +18,6 @@ import javafx.stage.Stage;
 public class ConnectionController implements Initializable {
 
   private int portNumber;
-
   private volatile boolean isReadThreadConnectionRun;
   private static Connection connection = Connection.getInstance();
   private static DataInputStream inputStream;
@@ -58,6 +58,17 @@ public class ConnectionController implements Initializable {
     Connection.getInstance().setConnected(true);
     Global.getParentController().setLabelStatusText("Connected");
     Global.getParentController().clearMessages();
+
+//    File file = new File("src/main/resources/history_" + loginTextField.getText() + ".txt");
+
+    User.getINSTANCE().setUsername(loginTextField.getText());
+    File file = new File("src/main/resources/history_" + User.getINSTANCE().getUsername()+ ".txt");
+if (file.exists()){
+  Global.getParentController().addAllToMessages(MessagesUtlil.deserializeAndLoadMessages(file));
+}else {
+  file.createNewFile();
+}
+
 
     // get a handle to the stage
     Stage windowConnect = (Stage) butConnect.getScene().getWindow();
@@ -193,7 +204,7 @@ public class ConnectionController implements Initializable {
                             "Name"
                                 + loginTextField.getText()
                                 + " not registered"
-                                + " .Fire up Reg button!");
+                                + " .Press Reg button!");
                         loginTextField.clear();
                         butConnect.setDisable(true);
                       });

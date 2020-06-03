@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -7,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -28,20 +30,12 @@ import javafx.stage.WindowEvent;
 import net.jcip.annotations.GuardedBy;
 
 public class Controller implements Initializable {
+
   private static volatile boolean isReadThreadRunning;
+  private static  CopyOnWriteArrayList<String>  messages   =   new CopyOnWriteArrayList<>();
 
-  //  @GuardedBy("this")
-  //  private static Vector<String> messages = new Vector<>();
-  //
-  //  @GuardedBy("this")
-  //  private static Vector<String> tmpMessages = new Vector<>();
-  //
-  //  @GuardedBy("this")
-  //  private static Vector<String> clientList = new Vector<>();
-  //
-
-  @GuardedBy("this")
-  private static ArrayList<String> messages = new ArrayList<>();
+//  @GuardedBy("this")
+//  private static ArrayList<String> messages = new ArrayList<>();
 
   @GuardedBy("this")
   private static ArrayList<String> tmpMessages = new ArrayList<>();
@@ -53,11 +47,15 @@ public class Controller implements Initializable {
   private static DataInputStream inputStream;
   private static DataOutputStream outputStream;
 
-  @FXML private MenuItem menuConnect;
-  @FXML private TextField messageInput;
-  @FXML private Button sendMessageButton;
+  @FXML
+  private MenuItem menuConnect;
+  @FXML
+  private TextField messageInput;
+  @FXML
+  private Button sendMessageButton;
 
-  @FXML private Label labelStatus;
+  @FXML
+  private Label labelStatus;
 
   private final Object listChatViewLock = new Object();
 
@@ -76,8 +74,17 @@ public class Controller implements Initializable {
   private static EventHandler<WindowEvent> closeEventHandler =
       event -> {
         System.out.println("DO SMTH ON EXIT");
+        if (!User.getINSTANCE().getUsername().isEmpty()) {
+          saveMessages();
+        }
         System.exit(1);
       };
+
+  private static void saveMessages() {
+    File file = new File("src/main/resources/history_" + User.getINSTANCE().getUsername()
+        + ".txt");
+    MessagesUtlil.serializeAnsSaveMessages(file, messages);
+  }
 
   public void send1Message(ActionEvent actionEvent) {
     sendMessage();
@@ -252,6 +259,20 @@ public class Controller implements Initializable {
     messages.add(string);
   }
 
+  public synchronized void addAllToMessages(List<String> mesgs) {
+    int msgCount = 40;
+    int mesgsize = mesgs.size();
+
+    if (mesgsize < msgCount && !mesgs.isEmpty()) {
+      messages.addAll(mesgs);
+    } else {
+      messages.addAll(mesgs.subList(mesgsize - 35, mesgsize));
+    }
+
+  }
+
+
+
   public synchronized void clearMessages() {
     messages.clear();
     listView.getItems().clear();
@@ -309,7 +330,7 @@ public class Controller implements Initializable {
   }
 
   public void menuDisconnectAction(ActionEvent actionEvent) {
-    if (labelStatus.getText().equals("Connected")){
+    if (labelStatus.getText().equals("Connected")) {
       sendMessageToServer("/end");
     }
   }
